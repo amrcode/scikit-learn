@@ -25,7 +25,6 @@ from scipy import sparse as sp
 from ._expected_mutual_info_fast import expected_mutual_information
 from ...utils.fixes import _astype_copy_false
 from ...utils.multiclass import type_of_target
-from ...utils.validation import _deprecate_positional_args
 from ...utils.validation import check_array, check_consistent_length
 
 
@@ -84,7 +83,6 @@ def _generalized_average(U, V, average_method):
                          "'arithmetic', or 'max'")
 
 
-@_deprecate_positional_args
 def contingency_matrix(labels_true, labels_pred, *, eps=None, sparse=False,
                        dtype=np.int64):
     """Build a contingency matrix describing the relationship between labels.
@@ -390,7 +388,6 @@ def adjusted_rand_score(labels_true, labels_pred):
                                        (tp + fp) * (fp + tn))
 
 
-@_deprecate_positional_args
 def homogeneity_completeness_v_measure(labels_true, labels_pred, *, beta=1.0):
     """Compute the homogeneity and completeness and V-Measure scores at once.
 
@@ -611,7 +608,6 @@ def completeness_score(labels_true, labels_pred):
     return homogeneity_completeness_v_measure(labels_true, labels_pred)[1]
 
 
-@_deprecate_positional_args
 def v_measure_score(labels_true, labels_pred, *, beta=1.0):
     """V-measure cluster labeling given a ground truth.
 
@@ -711,12 +707,11 @@ def v_measure_score(labels_true, labels_pred, *, beta=1.0):
                                               beta=beta)[2]
 
 
-@_deprecate_positional_args
 def mutual_info_score(labels_true, labels_pred, *, contingency=None):
     """Mutual Information between two clusterings.
 
-    The Mutual Information is a measure of the similarity between two labels of
-    the same data. Where :math:`|U_i|` is the number of the samples
+    The Mutual Information is a measure of the similarity between two labels
+    of the same data. Where :math:`|U_i|` is the number of the samples
     in cluster :math:`U_i` and :math:`|V_j|` is the number of the
     samples in cluster :math:`V_j`, the Mutual Information
     between clusterings :math:`U` and :math:`V` is given as:
@@ -730,20 +725,23 @@ def mutual_info_score(labels_true, labels_pred, *, contingency=None):
     a permutation of the class or cluster label values won't change the
     score value in any way.
 
-    This metric is furthermore symmetric: switching ``label_true`` with
-    ``label_pred`` will return the same score value. This can be useful to
-    measure the agreement of two independent label assignments strategies
-    on the same dataset when the real ground truth is not known.
+    This metric is furthermore symmetric: switching :math:`U` (i.e
+    ``label_true``) with :math:`V` (i.e. ``label_pred``) will return the
+    same score value. This can be useful to measure the agreement of two
+    independent label assignments strategies on the same dataset when the
+    real ground truth is not known.
 
     Read more in the :ref:`User Guide <mutual_info_score>`.
 
     Parameters
     ----------
     labels_true : int array, shape = [n_samples]
-        A clustering of the data into disjoint subsets.
+        A clustering of the data into disjoint subsets, called :math:`U` in
+        the above formula.
 
     labels_pred : int array-like of shape (n_samples,)
-        A clustering of the data into disjoint subsets.
+        A clustering of the data into disjoint subsets, called :math:`V` in
+        the above formula.
 
     contingency : {ndarray, sparse matrix} of shape \
             (n_classes_true, n_classes_pred), default=None
@@ -754,7 +752,8 @@ def mutual_info_score(labels_true, labels_pred, *, contingency=None):
     Returns
     -------
     mi : float
-       Mutual information, a non-negative value
+       Mutual information, a non-negative value, measured in nats using the
+       natural logarithm.
 
     Notes
     -----
@@ -795,10 +794,10 @@ def mutual_info_score(labels_true, labels_pred, *, contingency=None):
     log_outer = -np.log(outer) + log(pi.sum()) + log(pj.sum())
     mi = (contingency_nm * (log_contingency_nm - log(contingency_sum)) +
           contingency_nm * log_outer)
+    mi = np.where(np.abs(mi) < np.finfo(mi.dtype).eps, 0.0, mi)
     return np.clip(mi.sum(), 0.0, None)
 
 
-@_deprecate_positional_args
 def adjusted_mutual_info_score(labels_true, labels_pred, *,
                                average_method='arithmetic'):
     """Adjusted Mutual Information between two clusterings.
@@ -815,10 +814,10 @@ def adjusted_mutual_info_score(labels_true, labels_pred, *,
     a permutation of the class or cluster label values won't change the
     score value in any way.
 
-    This metric is furthermore symmetric: switching ``label_true`` with
-    ``label_pred`` will return the same score value. This can be useful to
-    measure the agreement of two independent label assignments strategies
-    on the same dataset when the real ground truth is not known.
+    This metric is furthermore symmetric: switching :math:`U` (``label_true``)
+    with :math:`V` (``labels_pred``) will return the same score value. This can
+    be useful to measure the agreement of two independent label assignments
+    strategies on the same dataset when the real ground truth is not known.
 
     Be mindful that this function is an order of magnitude slower than other
     metrics, such as the Adjusted Rand Index.
@@ -828,10 +827,12 @@ def adjusted_mutual_info_score(labels_true, labels_pred, *,
     Parameters
     ----------
     labels_true : int array, shape = [n_samples]
-        A clustering of the data into disjoint subsets.
+        A clustering of the data into disjoint subsets, called :math:`U` in
+        the above formula.
 
     labels_pred : int array-like of shape (n_samples,)
-        A clustering of the data into disjoint subsets.
+        A clustering of the data into disjoint subsets, called :math:`V` in
+        the above formula.
 
     average_method : str, default='arithmetic'
         How to compute the normalizer in the denominator. Possible options
@@ -848,7 +849,8 @@ def adjusted_mutual_info_score(labels_true, labels_pred, *,
     ami: float (upperlimited by 1.0)
        The AMI returns a value of 1 when the two partitions are identical
        (ie perfectly matched). Random partitions (independent labellings) have
-       an expected AMI around 0 on average hence can be negative.
+       an expected AMI around 0 on average hence can be negative. The value is
+       in adjusted nats (based on the natural logarithm).
 
     See Also
     --------
@@ -919,7 +921,6 @@ def adjusted_mutual_info_score(labels_true, labels_pred, *,
     return ami
 
 
-@_deprecate_positional_args
 def normalized_mutual_info_score(labels_true, labels_pred, *,
                                  average_method='arithmetic'):
     """Normalized Mutual Information between two clusterings.
@@ -965,7 +966,8 @@ def normalized_mutual_info_score(labels_true, labels_pred, *,
     Returns
     -------
     nmi : float
-       score between 0.0 and 1.0. 1.0 stands for perfectly complete labeling
+       Score between 0.0 and 1.0 in normalized nats (based on the natural
+       logarithm). 1.0 stands for perfectly complete labeling.
 
     See Also
     --------
@@ -1020,7 +1022,6 @@ def normalized_mutual_info_score(labels_true, labels_pred, *,
     return nmi
 
 
-@_deprecate_positional_args
 def fowlkes_mallows_score(labels_true, labels_pred, *, sparse=False):
     """Measure the similarity of two clusterings of a set of points.
 
@@ -1083,7 +1084,7 @@ def fowlkes_mallows_score(labels_true, labels_pred, *, sparse=False):
     .. [1] `E. B. Fowkles and C. L. Mallows, 1983. "A method for comparing two
        hierarchical clusterings". Journal of the American Statistical
        Association
-       <http://wildfire.stat.ucla.edu/pdflibrary/fowlkes.pdf>`_
+       <https://www.tandfonline.com/doi/abs/10.1080/01621459.1983.10478008>`_
 
     .. [2] `Wikipedia entry for the Fowlkes-Mallows Index
            <https://en.wikipedia.org/wiki/Fowlkes-Mallows_index>`_
